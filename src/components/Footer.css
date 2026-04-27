@@ -1,0 +1,133 @@
+.footer-wrapper {
+  margin-top: auto;
+  padding-top: var(--spacing-xl);
+  background-color: var(--color-background);
+}
+
+.pre-footer {
+  background-color: rgba(212, 175, 55, 0.08);
+  /* Soft Gold Tint */
+  border-radius: var(--border-radius-lg);
+  padding: 5.6rem 10.8rem; /* Sidephone exact ratios */
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.pre-footer-logo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  margin-bottom: var(--spacing-md);
+  align-items: center;
+}
+
+.pre-logo-primary {
+  font-family: var(--font-heading);
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  letter-spacing: -0.04em;
+}
+
+.pre-logo-secondary {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--color-primary-gold-dark);
+  letter-spacing: 0;
+}
+
+.pre-footer-text {
+  color: var(--color-text-dark);
+  font-size: 14.1px;
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+.footer {
+  background-color: var(--color-surface);
+  color: var(--color-text-dark);
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid var(--color-border);
+}
+
+.footer-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  padding-bottom: var(--spacing-lg);
+}
+
+.footer-logo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  text-decoration: none;
+  margin-bottom: var(--spacing-sm);
+  display: inline-flex;
+}
+
+.logo-primary {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-dark);
+  letter-spacing: -0.04em;
+}
+
+.logo-secondary {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--color-primary-gold-dark);
+  letter-spacing: 0;
+}
+
+.footer-legacy {
+  color: var(--color-text-muted);
+}
+
+.footer-contact h3 {
+  font-size: 1.125rem;
+  color: var(--color-text-dark);
+  margin-bottom: var(--spacing-sm);
+}
+
+.footer-contact p {
+  color: var(--color-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.footer-bottom {
+  background-color: var(--color-background);
+  text-align: center;
+  padding: 1.5rem 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 768px) {
+  .footer-container {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+
+  .pre-footer {
+    padding: var(--spacing-lg) var(--spacing-sm);
+  }
+
+  .pre-logo-primary {
+    font-size: 2rem;
+  }
+
+  .pre-logo-secondary {
+    font-size: 1.25rem;
+  }
+}
