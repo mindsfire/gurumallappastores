@@ -1,0 +1,157 @@
+.container {
+  max-width: 600px;
+  margin: 4rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eaeaea;
+}
+
+.title {
+  text-align: center;
+  color: var(--primary-color, #4a2c00);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  text-align: center;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: #fca311;
+  box-shadow: 0 0 0 2px rgba(252, 163, 17, 0.2);
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 1rem;
+  background-color: var(--primary-color, #4a2c00);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.submitBtn:hover {
+  background-color: #311c00;
+}
+
+.submitBtn:disabled {
+  background-color: #8c6a3f;
+  cursor: not-allowed;
+}
+
+.error {
+  color: #dc3545;
+  background: #f8d7da;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Result Card */
+.resultCard {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid #eaeaea;
+}
+
+.statusHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.statusHeader h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.badge {
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.85rem;
+}
+
+.badge.PENDING_VERIFICATION {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.badge.PROCESSING {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.badge.SHIPPED {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge.COMPLETED {
+  background-color: #28a745;
+  color: white;
+}
+
+.badge.CANCELLED {
+  background-color: #dc3545;
+  color: white;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  background: #f9f9f9;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+}
+
+.detailLabel {
+  font-size: 0.8rem;
+  color: #666;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+
+.detailValue {
+  font-weight: 500;
+}
