@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import QRCode from "react-qr-code";
+import Link from "next/link";
 import styles from "./page.module.css";
 
 const STORE_UPI_ID = process.env.NEXT_PUBLIC_STORE_UPI_ID || "vjsandu-3@okhdfcbank";
@@ -11,7 +12,7 @@ const STORE_NAME = "Gurumallappa Stores";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, totalPrice, clearCart, isLoaded } = useCart() as any; // any to bypass strict type check for isLoaded if not added
+  const { items, totalPrice, clearCart, updateQuantity } = useCart() as any;
   const [mounted, setMounted] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -98,6 +99,18 @@ export default function CheckoutPage() {
   const finalTotal = totalPrice + 30;
   const upiUrl = `upi://pay?pa=${STORE_UPI_ID}&pn=${encodeURIComponent(STORE_NAME)}&am=${finalTotal}&cu=INR`;
 
+  if (items.length === 0) {
+    return (
+      <div className={styles.checkoutContainer} style={{ textAlign: "center", padding: "4rem 1rem" }}>
+        <h1 className={styles.title}>Your Cart is Empty</h1>
+        <p style={{ color: "#666", marginBottom: "2rem" }}>Please add some items to your cart before proceeding to checkout.</p>
+        <Link href="/#products" className="btn-primary" style={{ display: "inline-block" }}>
+          Browse Products
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.checkoutContainer}>
       <h1 className={styles.title}>Secure Checkout</h1>
@@ -148,12 +161,21 @@ export default function CheckoutPage() {
           <div className={styles.section} style={{ marginBottom: "2rem" }}>
             <h2 className={styles.sectionTitle}>Order Summary</h2>
             {items.map((item: any) => (
-              <div key={item.productId} className={styles.cartItem}>
-                <span>{item.name} x{item.quantity}</span>
-                <span>₹{item.price * item.quantity}</span>
+              <div key={item.productId} className={styles.cartItem} style={{ alignItems: "center" }}>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <span style={{ fontWeight: "500" }}>{item.name}</span>
+                  <div style={{ display: "flex", alignItems: "center", marginTop: "0.5rem", gap: "1rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", background: "#f5f5f5", borderRadius: "4px" }}>
+                      <button type="button" onClick={() => updateQuantity(item.productId, item.quantity - 1)} style={{ padding: "0.2rem 0.6rem", border: "none", background: "transparent", cursor: "pointer", fontWeight: "bold" }}>-</button>
+                      <span style={{ fontSize: "0.9rem", width: "20px", textAlign: "center" }}>{item.quantity}</span>
+                      <button type="button" onClick={() => updateQuantity(item.productId, item.quantity + 1)} style={{ padding: "0.2rem 0.6rem", border: "none", background: "transparent", cursor: "pointer", fontWeight: "bold" }}>+</button>
+                    </div>
+                  </div>
+                </div>
+                <span style={{ fontWeight: "bold" }}>₹{item.price * item.quantity}</span>
               </div>
             ))}
-            <div className={styles.cartItem} style={{ color: "#666", marginTop: "0.5rem" }}>
+            <div className={styles.cartItem} style={{ color: "#666", marginTop: "1rem", paddingTop: "1rem", borderTop: "1px dashed #ccc" }}>
               <span>Delivery Fee (Mysuru)</span>
               <span>₹30</span>
             </div>
