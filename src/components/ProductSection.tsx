@@ -27,19 +27,35 @@ export default function ProductSection({ productGroups }: { productGroups: Produ
 }
 
 function ProductCard({ group }: { group: ProductGroup }) {
-  const { items, addToCart, updateQuantity } = useCart();
+  const cart = useCart();
   const [selectedVariantId, setSelectedVariantId] = useState(group.variants[0]?.id || "");
+  const [debugMsg, setDebugMsg] = useState("");
+
   const selectedVariant = group.variants.find(v => v.id === selectedVariantId);
-  const cartItem = items.find((item: any) => item.productId === selectedVariantId);
+  const cartItem = cart.items.find((item) => item.productId === selectedVariantId);
 
   const handleAdd = () => {
-    if (!selectedVariant || !selectedVariant.isAvailable) return;
-    addToCart({
-      productId: selectedVariant.id,
-      name: `${group.name} - ${selectedVariant.unitSize}`,
-      price: selectedVariant.price,
-      quantity: 1
-    });
+    // Debug: show what's happening
+    if (!selectedVariant) {
+      setDebugMsg("ERR: No variant selected");
+      return;
+    }
+    if (!selectedVariant.isAvailable) {
+      setDebugMsg("ERR: Out of stock");
+      return;
+    }
+
+    try {
+      cart.addToCart({
+        productId: selectedVariant.id,
+        name: `${group.name} - ${selectedVariant.unitSize}`,
+        price: selectedVariant.price,
+        quantity: 1
+      });
+      setDebugMsg("Added! ✓");
+    } catch (err: any) {
+      setDebugMsg("ERR: " + err.message);
+    }
   };
 
   return (
@@ -59,16 +75,14 @@ function ProductCard({ group }: { group: ProductGroup }) {
       <div style={{ width: "100%", marginBottom: "1rem" }}>
         <select
           value={selectedVariantId}
-          onChange={(e) => setSelectedVariantId(e.target.value)}
+          onChange={(e) => { setSelectedVariantId(e.target.value); setDebugMsg(""); }}
           style={{
             width: "100%",
             padding: "0.6rem",
             borderRadius: "6px",
             border: "1px solid #ccc",
             background: "#fff",
-            fontSize: "0.95rem",
-            appearance: "auto",
-            WebkitAppearance: "menulist"
+            fontSize: "0.95rem"
           }}
         >
           {group.variants.map(v => (
@@ -78,6 +92,13 @@ function ProductCard({ group }: { group: ProductGroup }) {
           ))}
         </select>
       </div>
+
+      {/* Debug info - will remove after fixing */}
+      {debugMsg && (
+        <div style={{ width: "100%", marginBottom: "0.5rem", padding: "0.5rem", background: debugMsg.startsWith("ERR") ? "#f8d7da" : "#d4edda", borderRadius: "4px", fontSize: "0.8rem", textAlign: "center" }}>
+          {debugMsg}
+        </div>
+      )}
 
       {cartItem ? (
         <div style={{
@@ -91,62 +112,47 @@ function ProductCard({ group }: { group: ProductGroup }) {
         }}>
           <button
             type="button"
-            onClick={() => updateQuantity(cartItem.productId, cartItem.quantity - 1)}
-            style={{
-              padding: "0.85rem 1.2rem",
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              fontWeight: "bold",
-              fontSize: "1.3rem",
-              color: "#4a2c00",
-              touchAction: "manipulation",
-              WebkitTapHighlightColor: "transparent"
-            }}
+            onClick={() => cart.updateQuantity(cartItem.productId, cartItem.quantity - 1)}
+            style={{ padding: "0.85rem 1.2rem", border: "none", background: "transparent", cursor: "pointer", fontWeight: "bold", fontSize: "1.3rem", color: "#4a2c00" }}
           >
             −
           </button>
           <span style={{ fontWeight: "bold", color: "#333", fontSize: "0.95rem" }}>{cartItem.quantity} in Cart</span>
           <button
             type="button"
-            onClick={() => updateQuantity(cartItem.productId, cartItem.quantity + 1)}
-            style={{
-              padding: "0.85rem 1.2rem",
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              fontWeight: "bold",
-              fontSize: "1.3rem",
-              color: "#4a2c00",
-              touchAction: "manipulation",
-              WebkitTapHighlightColor: "transparent"
-            }}
+            onClick={() => cart.updateQuantity(cartItem.productId, cartItem.quantity + 1)}
+            style={{ padding: "0.85rem 1.2rem", border: "none", background: "transparent", cursor: "pointer", fontWeight: "bold", fontSize: "1.3rem", color: "#4a2c00" }}
           >
             +
           </button>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={handleAdd}
-          disabled={!selectedVariant || !selectedVariant.isAvailable}
-          style={{
-            width: "100%",
-            padding: "0.85rem",
-            background: (!selectedVariant || !selectedVariant.isAvailable) ? "#999" : "#4a2c00",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            fontWeight: "bold",
-            fontSize: "1rem",
-            cursor: (!selectedVariant || !selectedVariant.isAvailable) ? "not-allowed" : "pointer",
-            opacity: (!selectedVariant || !selectedVariant.isAvailable) ? 0.6 : 1,
-            touchAction: "manipulation",
-            WebkitTapHighlightColor: "transparent"
+        <div style={{ width: "100%" }}
+          onTouchEnd={(e) => {
+            e.preventDefault();
+            handleAdd();
           }}
         >
-          Add to Cart
-        </button>
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={!selectedVariant || !selectedVariant.isAvailable}
+            style={{
+              width: "100%",
+              padding: "0.85rem",
+              background: (!selectedVariant || !selectedVariant.isAvailable) ? "#999" : "#4a2c00",
+              color: "white",
+              border: "none",
+              borderRadius: "6px",
+              fontWeight: "bold",
+              fontSize: "1rem",
+              cursor: (!selectedVariant || !selectedVariant.isAvailable) ? "not-allowed" : "pointer",
+              opacity: (!selectedVariant || !selectedVariant.isAvailable) ? 0.6 : 1
+            }}
+          >
+            Add to Cart
+          </button>
+        </div>
       )}
     </div>
   );
