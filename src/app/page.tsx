@@ -44,9 +44,9 @@ export default async function Home() {
             <p className={styles.heroSubtitle}>
               Experience the authentic taste of Mysore with our traditionally crafted Pure Cow Ghee, Butter, and signature Gulkand. Serving families for over a century.
             </p>
-            <Link href="#products" className="btn-primary">
-              Shop Authentic Ghee
-            </Link>
+            <a href="#products" className="btn-primary">
+              Explore Our Products
+            </a>
           </div>
           <div className={styles.heroImageWrapper}>
             <div className={styles.imageDecoration}></div>
