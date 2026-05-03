@@ -175,7 +175,35 @@ export default function AdminDashboardPage() {
     width: "100%"
   };
 
-  if (isLoading) return <div style={{ padding: "2rem", textAlign: "center" }}>Loading dashboard...</div>;
+  if (isLoading) return (
+    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "2rem 1rem", animation: "pulse 1.5s infinite ease-in-out" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+        <div style={{ width: "200px", height: "36px", background: "#eee", borderRadius: "6px" }}></div>
+        <div style={{ width: "80px", height: "36px", background: "#eee", borderRadius: "4px" }}></div>
+      </div>
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "2rem", borderBottom: "2px solid #eee", paddingBottom: "0.5rem" }}>
+        <div style={{ width: "100px", height: "36px", background: "#eee", borderRadius: "4px" }}></div>
+        <div style={{ width: "120px", height: "36px", background: "#eee", borderRadius: "4px" }}></div>
+      </div>
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
+        <div style={{ width: "150px", height: "32px", background: "#eee", borderRadius: "20px" }}></div>
+        <div style={{ width: "120px", height: "32px", background: "#eee", borderRadius: "20px" }}></div>
+        <div style={{ width: "130px", height: "32px", background: "#eee", borderRadius: "20px" }}></div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} style={{ width: "100%", height: "70px", background: "#f5f5f5", borderRadius: "8px" }}></div>
+        ))}
+      </div>
+      <style>{`
+        @keyframes pulse {
+          0% { opacity: 0.6; }
+          50% { opacity: 1; }
+          100% { opacity: 0.6; }
+        }
+      `}</style>
+    </div>
+  );
   if (error) return <div style={{ padding: "2rem", color: "red", textAlign: "center" }}>{error}</div>;
 
   return (
