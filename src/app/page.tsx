@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import styles from "./page.module.css";
 import { prisma } from "@/lib/prisma";
 import ProductSection from "@/components/ProductSection";
@@ -6,41 +7,23 @@ import ProductSection from "@/components/ProductSection";
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
-  const allProducts = await prisma.product.findMany();
+  const allProducts = await prisma.product.findMany({
+    orderBy: [{ name: 'asc' }, { price: 'asc' }]
+  });
 
-  // Group products into product groups with plain serializable data (no JSX)
-  const productGroups = [
-    {
-      name: "Pure Cow Ghee",
-      description: "Rich, aromatic, and deeply nourishing. Made using the traditional Bilona method.",
-      variants: allProducts.filter(p => p.name === "Pure Cow Ghee").map(p => ({
-        id: p.id,
-        unitSize: p.unitSize,
-        price: p.price,
-        isAvailable: p.isAvailable
-      }))
-    },
-    {
-      name: "Fresh Cow Butter",
-      description: "Creamy, unsalted, and churned daily for the absolute freshest taste.",
-      variants: allProducts.filter(p => p.name === "Fresh Cow Butter").map(p => ({
-        id: p.id,
-        unitSize: p.unitSize,
-        price: p.price,
-        isAvailable: p.isAvailable
-      }))
-    },
-    {
-      name: "Special Gulkand",
-      description: "A sweet preserve of rose petals, dates, and dry fruits. Best paired with our ghee.",
-      variants: allProducts.filter(p => p.name === "Special Gulkand").map(p => ({
-        id: p.id,
-        unitSize: p.unitSize,
-        price: p.price,
-        isAvailable: p.isAvailable
-      }))
-    }
-  ];
+  // Dynamically group products by name — any new product name added via admin will appear automatically
+  const productNames = [...new Set(allProducts.map(p => p.name))];
+
+  const productGroups = productNames.map(name => ({
+    name,
+    description: allProducts.find(p => p.name === name)?.description || "",
+    variants: allProducts.filter(p => p.name === name).map(p => ({
+      id: p.id,
+      unitSize: p.unitSize,
+      price: p.price,
+      isAvailable: p.isAvailable
+    }))
+  }));
 
   return (
     <div className={styles.page}>
@@ -55,6 +38,17 @@ export default async function Home() {
             <Link href="#products" className="btn-primary">
               Shop Authentic Ghee
             </Link>
+          </div>
+          <div className={styles.heroImageWrapper}>
+            <div className={styles.imageDecoration}></div>
+            <Image
+              src="/hero_ghee.png"
+              alt="Gurumallappa Stores storefront in Mysore"
+              width={500}
+              height={625}
+              className={styles.heroImage}
+              priority
+            />
           </div>
         </div>
       </section>

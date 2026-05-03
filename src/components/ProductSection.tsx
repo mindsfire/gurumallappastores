@@ -29,33 +29,18 @@ export default function ProductSection({ productGroups }: { productGroups: Produ
 function ProductCard({ group }: { group: ProductGroup }) {
   const cart = useCart();
   const [selectedVariantId, setSelectedVariantId] = useState(group.variants[0]?.id || "");
-  const [debugMsg, setDebugMsg] = useState("");
 
   const selectedVariant = group.variants.find(v => v.id === selectedVariantId);
   const cartItem = cart.items.find((item) => item.productId === selectedVariantId);
 
   const handleAdd = () => {
-    // Debug: show what's happening
-    if (!selectedVariant) {
-      setDebugMsg("ERR: No variant selected");
-      return;
-    }
-    if (!selectedVariant.isAvailable) {
-      setDebugMsg("ERR: Out of stock");
-      return;
-    }
-
-    try {
-      cart.addToCart({
-        productId: selectedVariant.id,
-        name: `${group.name} - ${selectedVariant.unitSize}`,
-        price: selectedVariant.price,
-        quantity: 1
-      });
-      setDebugMsg("Added! ✓");
-    } catch (err: any) {
-      setDebugMsg("ERR: " + err.message);
-    }
+    if (!selectedVariant || !selectedVariant.isAvailable) return;
+    cart.addToCart({
+      productId: selectedVariant.id,
+      name: `${group.name} - ${selectedVariant.unitSize}`,
+      price: selectedVariant.price,
+      quantity: 1
+    });
   };
 
   return (
@@ -75,7 +60,7 @@ function ProductCard({ group }: { group: ProductGroup }) {
       <div style={{ width: "100%", marginBottom: "1rem" }}>
         <select
           value={selectedVariantId}
-          onChange={(e) => { setSelectedVariantId(e.target.value); setDebugMsg(""); }}
+          onChange={(e) => setSelectedVariantId(e.target.value)}
           style={{
             width: "100%",
             padding: "0.6rem",
@@ -93,13 +78,6 @@ function ProductCard({ group }: { group: ProductGroup }) {
         </select>
       </div>
 
-      {/* Debug info - will remove after fixing */}
-      {debugMsg && (
-        <div style={{ width: "100%", marginBottom: "0.5rem", padding: "0.5rem", background: debugMsg.startsWith("ERR") ? "#f8d7da" : "#d4edda", borderRadius: "4px", fontSize: "0.8rem", textAlign: "center" }}>
-          {debugMsg}
-        </div>
-      )}
-
       {cartItem ? (
         <div style={{
           display: "flex",
@@ -113,7 +91,7 @@ function ProductCard({ group }: { group: ProductGroup }) {
           <button
             type="button"
             onClick={() => cart.updateQuantity(cartItem.productId, cartItem.quantity - 1)}
-            style={{ padding: "0.85rem 1.2rem", border: "none", background: "transparent", cursor: "pointer", fontWeight: "bold", fontSize: "1.3rem", color: "#4a2c00" }}
+            style={{ padding: "0.85rem 1.2rem", border: "none", background: "transparent", cursor: "pointer", fontWeight: "bold", fontSize: "1.3rem", color: "#4a2c00", touchAction: "manipulation" }}
           >
             −
           </button>
@@ -121,17 +99,14 @@ function ProductCard({ group }: { group: ProductGroup }) {
           <button
             type="button"
             onClick={() => cart.updateQuantity(cartItem.productId, cartItem.quantity + 1)}
-            style={{ padding: "0.85rem 1.2rem", border: "none", background: "transparent", cursor: "pointer", fontWeight: "bold", fontSize: "1.3rem", color: "#4a2c00" }}
+            style={{ padding: "0.85rem 1.2rem", border: "none", background: "transparent", cursor: "pointer", fontWeight: "bold", fontSize: "1.3rem", color: "#4a2c00", touchAction: "manipulation" }}
           >
             +
           </button>
         </div>
       ) : (
         <div style={{ width: "100%" }}
-          onTouchEnd={(e) => {
-            e.preventDefault();
-            handleAdd();
-          }}
+          onTouchEnd={(e) => { e.preventDefault(); handleAdd(); }}
         >
           <button
             type="button"
@@ -147,7 +122,8 @@ function ProductCard({ group }: { group: ProductGroup }) {
               fontWeight: "bold",
               fontSize: "1rem",
               cursor: (!selectedVariant || !selectedVariant.isAvailable) ? "not-allowed" : "pointer",
-              opacity: (!selectedVariant || !selectedVariant.isAvailable) ? 0.6 : 1
+              opacity: (!selectedVariant || !selectedVariant.isAvailable) ? 0.6 : 1,
+              touchAction: "manipulation"
             }}
           >
             Add to Cart

@@ -14,6 +14,13 @@ export default function AdminDashboardPage() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [phoneFilter, setPhoneFilter] = useState("");
 
+  // Inventory management state
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", unitSize: "", price: "", description: "" });
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newProduct, setNewProduct] = useState({ name: "", unitSize: "", price: "", description: "" });
+  const [actionMsg, setActionMsg] = useState("");
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -54,18 +61,91 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const updateProductAvailability = async (productId: string, isAvailable: boolean) => {
+  const updateProduct = async (productId: string, updates: Record<string, any>) => {
     try {
       const res = await fetch(`/api/admin/products`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: productId, isAvailable })
+        body: JSON.stringify({ id: productId, ...updates })
       });
-      if (!res.ok) throw new Error("Failed to update stock");
+      if (!res.ok) throw new Error("Failed to update product");
+      setEditingProduct(null);
+      setActionMsg("Product updated ✓");
+      setTimeout(() => setActionMsg(""), 3000);
       fetchData();
     } catch (err: any) {
       alert(err.message);
     }
+  };
+
+  const addProduct = async () => {
+    if (!newProduct.name || !newProduct.unitSize || !newProduct.price) {
+      alert("Name, Unit Size, and Price are required");
+      return;
+    }
+    try {
+      const body = JSON.stringify({
+        name: newProduct.name,
+        unitSize: newProduct.unitSize,
+        price: parseFloat(newProduct.price),
+        description: newProduct.description
+      });
+
+      // Retry once on failure (handles Neon cold start)
+      let res = await fetch(`/api/admin/products`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body
+      });
+      if (!res.ok) {
+        setActionMsg("Database waking up... retrying...");
+        res = await fetch(`/api/admin/products`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body
+        });
+      }
+      if (!res.ok) throw new Error("Failed to add product");
+      setShowAddForm(false);
+      setNewProduct({ name: "", unitSize: "", price: "", description: "" });
+      setActionMsg("Product added ✓");
+      setTimeout(() => setActionMsg(""), 3000);
+      fetchData();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const deleteProduct = async (productId: string, productName: string) => {
+    if (!confirm(`Are you sure you want to delete "${productName}"?`)) return;
+    try {
+      const res = await fetch(`/api/admin/products`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: productId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete product");
+      if (data.softDeleted) {
+        setActionMsg(data.message);
+      } else {
+        setActionMsg("Product deleted ✓");
+      }
+      setTimeout(() => setActionMsg(""), 5000);
+      fetchData();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const startEditing = (product: any) => {
+    setEditingProduct(product.id);
+    setEditForm({
+      name: product.name,
+      unitSize: product.unitSize,
+      price: String(product.price),
+      description: product.description || ""
+    });
   };
 
   const handleLogout = async () => {
@@ -76,13 +156,7 @@ export default function AdminDashboardPage() {
 
   // Get unique phone numbers for the filter
   const uniquePhones = [...new Set(orders.map(o => o.customer?.phone).filter(Boolean))];
-
-  // Filter orders by phone
-  const filteredOrders = phoneFilter 
-    ? orders.filter(o => o.customer?.phone === phoneFilter)
-    : orders;
-
-  // Get order count by phone
+  const filteredOrders = phoneFilter ? orders.filter(o => o.customer?.phone === phoneFilter) : orders;
   const orderCountByPhone = (phone: string) => orders.filter(o => o.customer?.phone === phone).length;
 
   const statusColors: Record<string, string> = {
@@ -91,6 +165,14 @@ export default function AdminDashboardPage() {
     SHIPPED: "#d4edda",
     COMPLETED: "#d4edda",
     CANCELLED: "#f8d7da"
+  };
+
+  const inputStyle = {
+    padding: "0.5rem",
+    borderRadius: "4px",
+    border: "1px solid #ccc",
+    fontSize: "0.9rem",
+    width: "100%"
   };
 
   if (isLoading) return <div style={{ padding: "2rem", textAlign: "center" }}>Loading dashboard...</div>;
@@ -119,85 +201,62 @@ export default function AdminDashboardPage() {
           onClick={() => setActiveTab("inventory")}
           style={{ padding: "0.5rem 1rem", background: activeTab === "inventory" ? "#4a2c00" : "transparent", color: activeTab === "inventory" ? "white" : "#333", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
         >
-          Inventory
+          Inventory ({products.length})
         </button>
       </div>
 
+      {/* Action message toast */}
+      {actionMsg && (
+        <div style={{
+          padding: "0.75rem 1rem",
+          marginBottom: "1rem",
+          borderRadius: "6px",
+          background: actionMsg.includes("✓") ? "#d4edda" : "#fff3cd",
+          color: actionMsg.includes("✓") ? "#155724" : "#856404",
+          fontWeight: "bold",
+          fontSize: "0.9rem"
+        }}>
+          {actionMsg}
+        </div>
+      )}
+
+      {/* ====== ORDERS TAB ====== */}
       {activeTab === "orders" && (
         <div>
-          {/* Phone number filter */}
           <div style={{ marginBottom: "1.5rem", display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
             <span style={{ fontWeight: "bold", fontSize: "0.9rem", color: "#666" }}>Filter by Customer:</span>
-            <button
-              onClick={() => setPhoneFilter("")}
-              style={{
-                padding: "0.4rem 0.8rem",
-                border: phoneFilter === "" ? "2px solid #4a2c00" : "1px solid #ccc",
-                background: phoneFilter === "" ? "#f5f0e8" : "white",
-                borderRadius: "20px",
-                cursor: "pointer",
-                fontSize: "0.85rem",
-                fontWeight: phoneFilter === "" ? "bold" : "normal"
-              }}
-            >
+            <button onClick={() => setPhoneFilter("")} style={{ padding: "0.4rem 0.8rem", border: phoneFilter === "" ? "2px solid #4a2c00" : "1px solid #ccc", background: phoneFilter === "" ? "#f5f0e8" : "white", borderRadius: "20px", cursor: "pointer", fontSize: "0.85rem", fontWeight: phoneFilter === "" ? "bold" : "normal" }}>
               All ({orders.length})
             </button>
             {uniquePhones.map(phone => (
-              <button
-                key={phone}
-                onClick={() => setPhoneFilter(phone)}
-                style={{
-                  padding: "0.4rem 0.8rem",
-                  border: phoneFilter === phone ? "2px solid #4a2c00" : "1px solid #ccc",
-                  background: phoneFilter === phone ? "#f5f0e8" : "white",
-                  borderRadius: "20px",
-                  cursor: "pointer",
-                  fontSize: "0.85rem",
-                  fontWeight: phoneFilter === phone ? "bold" : "normal"
-                }}
-              >
+              <button key={phone} onClick={() => setPhoneFilter(phone)} style={{ padding: "0.4rem 0.8rem", border: phoneFilter === phone ? "2px solid #4a2c00" : "1px solid #ccc", background: phoneFilter === phone ? "#f5f0e8" : "white", borderRadius: "20px", cursor: "pointer", fontSize: "0.85rem", fontWeight: phoneFilter === phone ? "bold" : "normal" }}>
                 📱 {phone} ({orderCountByPhone(phone)})
               </button>
             ))}
           </div>
 
-          {/* Orders list */}
           {filteredOrders.length === 0 ? (
-            <div style={{ padding: "2rem", textAlign: "center", color: "#666", background: "white", borderRadius: "8px" }}>
-              No orders found
-            </div>
+            <div style={{ padding: "2rem", textAlign: "center", color: "#666", background: "white", borderRadius: "8px" }}>No orders found</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               {filteredOrders.map(order => (
                 <div key={order.id} style={{ background: "white", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
-                  {/* Order header - always visible */}
-                  <div
-                    onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
-                    style={{ padding: "1rem", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}
-                  >
+                  <div onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)} style={{ padding: "1rem", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
                       <span style={{ fontWeight: "bold", fontSize: "1.1rem", color: "#4a2c00" }}>{order.shortId}</span>
                       <span style={{ fontSize: "0.85rem", color: "#666" }}>{new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                       <span style={{ fontWeight: "bold" }}>₹{order.totalAmount}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <span style={{
-                        padding: "0.3rem 0.7rem",
-                        borderRadius: "12px",
-                        fontSize: "0.8rem",
-                        fontWeight: "bold",
-                        background: statusColors[order.status] || "#eee"
-                      }}>
+                      <span style={{ padding: "0.3rem 0.7rem", borderRadius: "12px", fontSize: "0.8rem", fontWeight: "bold", background: statusColors[order.status] || "#eee" }}>
                         {order.status.replace(/_/g, " ")}
                       </span>
                       <span style={{ fontSize: "1.2rem" }}>{expandedOrder === order.id ? "▲" : "▼"}</span>
                     </div>
                   </div>
 
-                  {/* Expanded order details */}
                   {expandedOrder === order.id && (
                     <div style={{ padding: "0 1rem 1rem", borderTop: "1px solid #eee" }}>
-                      {/* Customer info */}
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", padding: "1rem 0", fontSize: "0.9rem" }}>
                         <div>
                           <div style={{ fontWeight: "bold", color: "#333", marginBottom: "0.25rem" }}>👤 Customer</div>
@@ -212,7 +271,6 @@ export default function AdminDashboardPage() {
                         </div>
                       </div>
 
-                      {/* Order items */}
                       <div style={{ marginBottom: "1rem" }}>
                         <div style={{ fontWeight: "bold", color: "#333", marginBottom: "0.5rem", fontSize: "0.9rem" }}>🛒 Items Ordered</div>
                         {order.items?.map((item: any) => (
@@ -222,16 +280,13 @@ export default function AdminDashboardPage() {
                           </div>
                         ))}
                         <div style={{ display: "flex", justifyContent: "space-between", padding: "0.4rem 0", fontSize: "0.85rem", color: "#666" }}>
-                          <span>Delivery Fee</span>
-                          <span>₹30</span>
+                          <span>Delivery Fee</span><span>₹30</span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", fontWeight: "bold", borderTop: "1px solid #333" }}>
-                          <span>Total</span>
-                          <span>₹{order.totalAmount}</span>
+                          <span>Total</span><span>₹{order.totalAmount}</span>
                         </div>
                       </div>
 
-                      {/* UTR */}
                       <div style={{ marginBottom: "1rem", fontSize: "0.9rem" }}>
                         <span style={{ fontWeight: "bold", color: "#333" }}>💳 UTR: </span>
                         <span style={{ fontFamily: "monospace", letterSpacing: "1px", background: "#f5f5f5", padding: "0.2rem 0.5rem", borderRadius: "4px" }}>
@@ -239,20 +294,9 @@ export default function AdminDashboardPage() {
                         </span>
                       </div>
 
-                      {/* Status update */}
                       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                         <span style={{ fontWeight: "bold", fontSize: "0.9rem" }}>Update Status:</span>
-                        <select 
-                          value={order.status}
-                          onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                          style={{ 
-                            padding: "0.5rem", 
-                            borderRadius: "4px", 
-                            border: "1px solid #ccc",
-                            backgroundColor: statusColors[order.status] || "white",
-                            fontWeight: "bold"
-                          }}
-                        >
+                        <select value={order.status} onChange={(e) => updateOrderStatus(order.id, e.target.value)} style={{ padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: statusColors[order.status] || "white", fontWeight: "bold" }}>
                           <option value="PENDING_VERIFICATION">Pending UTR</option>
                           <option value="PROCESSING">Processing</option>
                           <option value="SHIPPED">Shipped</option>
@@ -269,42 +313,177 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
+      {/* ====== INVENTORY TAB ====== */}
       {activeTab === "inventory" && (
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", background: "white", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
-            <thead>
-              <tr style={{ background: "#f9f9f9", textAlign: "left" }}>
-                <th style={{ padding: "1rem", borderBottom: "1px solid #eee" }}>Product Name</th>
-                <th style={{ padding: "1rem", borderBottom: "1px solid #eee" }}>Variant Size</th>
-                <th style={{ padding: "1rem", borderBottom: "1px solid #eee" }}>Price</th>
-                <th style={{ padding: "1rem", borderBottom: "1px solid #eee" }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map(product => (
-                <tr key={product.id} style={{ borderBottom: "1px solid #eee" }}>
-                  <td style={{ padding: "1rem", fontWeight: "bold" }}>{product.name}</td>
-                  <td style={{ padding: "1rem" }}>{product.unitSize}</td>
-                  <td style={{ padding: "1rem" }}>₹{product.price}</td>
-                  <td style={{ padding: "1rem" }}>
-                    <select 
-                      defaultValue={product.isAvailable ? "true" : "false"}
-                      onChange={(e) => updateProductAvailability(product.id, e.target.value === "true")}
-                      style={{ 
-                        padding: "0.5rem", 
-                        borderRadius: "4px", 
-                        border: "1px solid #ccc",
-                        background: product.isAvailable ? "#d4edda" : "#f8d7da"
-                      }}
-                    >
-                      <option value="true">In Stock</option>
-                      <option value="false">Out of Stock</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div>
+          {/* Add Product Button */}
+          <div style={{ marginBottom: "1.5rem" }}>
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              style={{
+                padding: "0.6rem 1.2rem",
+                background: showAddForm ? "#dc3545" : "#28a745",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                fontWeight: "bold",
+                cursor: "pointer",
+                fontSize: "0.9rem"
+              }}
+            >
+              {showAddForm ? "✕ Cancel" : "+ Add New Product"}
+            </button>
+          </div>
+
+          {/* Add Product Form */}
+          {showAddForm && (
+            <div style={{ background: "#f8f9fa", padding: "1.5rem", borderRadius: "8px", marginBottom: "1.5rem", border: "2px dashed #28a745" }}>
+              <h3 style={{ marginBottom: "1rem", fontSize: "1rem" }}>Add New Product</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "bold", marginBottom: "0.25rem", color: "#666" }}>Product Name</label>
+                  <input
+                    placeholder="e.g. Fresh Cow Butter"
+                    value={newProduct.name}
+                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "bold", marginBottom: "0.25rem", color: "#666" }}>Pack Size</label>
+                  <input
+                    placeholder="e.g. 500g Pack"
+                    value={newProduct.unitSize}
+                    onChange={(e) => setNewProduct({ ...newProduct, unitSize: e.target.value })}
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "bold", marginBottom: "0.25rem", color: "#666" }}>Price (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 640"
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                    style={inputStyle}
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <label style={{ display: "block", fontSize: "0.8rem", fontWeight: "bold", marginBottom: "0.25rem", color: "#666" }}>Description (optional)</label>
+                  <input
+                    placeholder="Short description"
+                    value={newProduct.description}
+                    onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+              <button
+                onClick={addProduct}
+                style={{ padding: "0.6rem 1.5rem", background: "#28a745", color: "white", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" }}
+              >
+                Save Product
+              </button>
+            </div>
+          )}
+
+          {/* Product List */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {products.map(product => (
+              <div key={product.id} style={{
+                background: "white",
+                borderRadius: "8px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                padding: "1rem",
+                opacity: product.isAvailable ? 1 : 0.6
+              }}>
+                {editingProduct === product.id ? (
+                  /* ---- EDIT MODE ---- */
+                  <div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "bold", color: "#666", marginBottom: "0.2rem" }}>Name</label>
+                        <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} style={inputStyle} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "bold", color: "#666", marginBottom: "0.2rem" }}>Pack Size</label>
+                        <input value={editForm.unitSize} onChange={(e) => setEditForm({ ...editForm, unitSize: e.target.value })} style={inputStyle} />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "bold", color: "#666", marginBottom: "0.2rem" }}>Price (₹)</label>
+                        <input type="number" value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} style={inputStyle} min="1" />
+                      </div>
+                      <div>
+                        <label style={{ display: "block", fontSize: "0.75rem", fontWeight: "bold", color: "#666", marginBottom: "0.2rem" }}>Description</label>
+                        <input value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} style={inputStyle} />
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: "0.5rem" }}>
+                      <button
+                        onClick={() => updateProduct(product.id, {
+                          name: editForm.name,
+                          unitSize: editForm.unitSize,
+                          price: parseFloat(editForm.price),
+                          description: editForm.description
+                        })}
+                        style={{ padding: "0.5rem 1rem", background: "#28a745", color: "white", border: "none", borderRadius: "4px", fontWeight: "bold", cursor: "pointer" }}
+                      >
+                        Save Changes
+                      </button>
+                      <button
+                        onClick={() => setEditingProduct(null)}
+                        style={{ padding: "0.5rem 1rem", background: "#6c757d", color: "white", border: "none", borderRadius: "4px", cursor: "pointer" }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ---- VIEW MODE ---- */
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+                    <div style={{ flex: 1, minWidth: "200px" }}>
+                      <div style={{ fontWeight: "bold", fontSize: "1rem" }}>{product.name}</div>
+                      <div style={{ fontSize: "0.85rem", color: "#666" }}>{product.unitSize}</div>
+                      {product.description && <div style={{ fontSize: "0.8rem", color: "#999", marginTop: "0.2rem" }}>{product.description}</div>}
+                    </div>
+                    <div style={{ fontWeight: "bold", fontSize: "1.1rem", color: "#4a2c00", minWidth: "80px" }}>
+                      ₹{product.price}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <select
+                        value={product.isAvailable ? "true" : "false"}
+                        onChange={(e) => updateProduct(product.id, { isAvailable: e.target.value === "true" })}
+                        style={{
+                          padding: "0.4rem 0.5rem",
+                          borderRadius: "4px",
+                          border: "1px solid #ccc",
+                          background: product.isAvailable ? "#d4edda" : "#f8d7da",
+                          fontSize: "0.85rem",
+                          fontWeight: "bold"
+                        }}
+                      >
+                        <option value="true">In Stock</option>
+                        <option value="false">Out of Stock</option>
+                      </select>
+                      <button
+                        onClick={() => startEditing(product)}
+                        style={{ padding: "0.4rem 0.8rem", background: "transparent", color: "#4a2c00", border: "1px solid #4a2c00", borderRadius: "4px", cursor: "pointer", fontSize: "0.85rem", fontWeight: "500" }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => deleteProduct(product.id, `${product.name} - ${product.unitSize}`)}
+                        style={{ padding: "0.4rem 0.8rem", background: "transparent", color: "#dc3545", border: "1px solid #dc3545", borderRadius: "4px", cursor: "pointer", fontSize: "0.85rem", fontWeight: "500" }}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
