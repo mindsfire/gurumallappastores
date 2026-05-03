@@ -13,6 +13,7 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState("");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -159,18 +160,24 @@ export default function AdminDashboardPage() {
   };
 
   // Get unique phone numbers for the filter
-  // Reset to page 1 when search query changes
+  // Reset to page 1 when search or status filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, statusFilter]);
 
-  const filteredOrders = searchQuery 
-    ? orders.filter(o => 
-        o.customer?.phone?.includes(searchQuery) || 
-        o.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        o.shortId?.toLowerCase().includes(searchQuery.toLowerCase())
-      ) 
-    : orders;
+  let filteredOrders = orders;
+  
+  if (statusFilter !== "ALL") {
+    filteredOrders = filteredOrders.filter(o => o.status === statusFilter);
+  }
+  
+  if (searchQuery) {
+    filteredOrders = filteredOrders.filter(o => 
+      o.customer?.phone?.includes(searchQuery) || 
+      o.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      o.shortId?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -267,17 +274,36 @@ export default function AdminDashboardPage() {
       {/* ====== ORDERS TAB ====== */}
       {activeTab === "orders" && (
         <div>
-          <div style={{ marginBottom: "1.5rem", display: "flex", gap: "1rem", alignItems: "center", background: "#f9f9f9", padding: "1rem", borderRadius: "8px", border: "1px solid #eee" }}>
-            <span style={{ fontWeight: "bold", fontSize: "0.9rem", color: "#333", whiteSpace: "nowrap" }}>🔍 Search Orders:</span>
-            <input 
-              type="search" 
-              placeholder="Search by customer name, phone number, or Order ID..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ ...inputStyle, maxWidth: "400px" }}
-            />
-            {searchQuery && (
-              <span style={{ fontSize: "0.85rem", color: "#666" }}>
+          <div style={{ marginBottom: "1.5rem", display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap", background: "#f9f9f9", padding: "1rem", borderRadius: "8px", border: "1px solid #eee" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flex: "1 1 250px" }}>
+              <span style={{ fontWeight: "bold", fontSize: "0.9rem", color: "#333", whiteSpace: "nowrap" }}>🔍 Search:</span>
+              <input 
+                type="search" 
+                placeholder="Name, Phone, or ID..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ ...inputStyle, width: "100%" }}
+              />
+            </div>
+            
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <span style={{ fontWeight: "bold", fontSize: "0.9rem", color: "#333", whiteSpace: "nowrap" }}>📋 Status:</span>
+              <select 
+                value={statusFilter} 
+                onChange={(e) => setStatusFilter(e.target.value)}
+                style={{ ...inputStyle, width: "auto", cursor: "pointer", background: "white" }}
+              >
+                <option value="ALL">All Orders</option>
+                <option value="PENDING_VERIFICATION">Pending Verification</option>
+                <option value="PROCESSING">Processing</option>
+                <option value="SHIPPED">Shipped</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+
+            {(searchQuery || statusFilter !== "ALL") && (
+              <span style={{ fontSize: "0.85rem", color: "#666", width: "100%" }}>
                 Found {filteredOrders.length} matching {filteredOrders.length === 1 ? "order" : "orders"}
               </span>
             )}
