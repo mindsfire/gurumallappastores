@@ -13,6 +13,10 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState("");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 25;
 
   // Inventory management state
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -155,6 +159,11 @@ export default function AdminDashboardPage() {
   };
 
   // Get unique phone numbers for the filter
+  // Reset to page 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   const filteredOrders = searchQuery 
     ? orders.filter(o => 
         o.customer?.phone?.includes(searchQuery) || 
@@ -162,6 +171,9 @@ export default function AdminDashboardPage() {
         o.shortId?.toLowerCase().includes(searchQuery.toLowerCase())
       ) 
     : orders;
+
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const paginatedOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const statusColors: Record<string, string> = {
     PENDING_VERIFICATION: "#fff3cd",
@@ -275,7 +287,7 @@ export default function AdminDashboardPage() {
             <div style={{ padding: "2rem", textAlign: "center", color: "#666", background: "white", borderRadius: "8px" }}>No orders found</div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              {filteredOrders.map(order => (
+              {paginatedOrders.map(order => (
                 <div key={order.id} style={{ background: "white", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
                   <div onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)} style={{ padding: "1rem", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", flex: 1 }}>
@@ -349,6 +361,29 @@ export default function AdminDashboardPage() {
                   )}
                 </div>
               ))}
+              
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem", padding: "1rem", background: "white", borderRadius: "8px", border: "1px solid #eee" }}>
+                  <button 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    style={{ padding: "0.5rem 1rem", borderRadius: "4px", border: "1px solid #ccc", background: currentPage === 1 ? "#f9f9f9" : "white", cursor: currentPage === 1 ? "not-allowed" : "pointer", color: currentPage === 1 ? "#999" : "#333", fontWeight: "bold" }}
+                  >
+                    ← Previous
+                  </button>
+                  <span style={{ fontSize: "0.9rem", color: "#666" }}>
+                    Page <strong style={{ color: "#333" }}>{currentPage}</strong> of <strong>{totalPages}</strong>
+                  </span>
+                  <button 
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    style={{ padding: "0.5rem 1rem", borderRadius: "4px", border: "1px solid #ccc", background: currentPage === totalPages ? "#f9f9f9" : "white", cursor: currentPage === totalPages ? "not-allowed" : "pointer", color: currentPage === totalPages ? "#999" : "#333", fontWeight: "bold" }}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
