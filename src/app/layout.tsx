@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import FloatingCartButton from '@/components/FloatingCartButton';
+import StorefrontLayout from '@/components/StorefrontLayout';
 import { CartProvider } from '@/context/CartContext';
 
 export const metadata: Metadata = {
@@ -20,10 +18,7 @@ export default function RootLayout({
       <body suppressHydrationWarning>
         <CartProvider>
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-            <Navbar />
-            <main style={{ flex: 1 }}>{children}</main>
-            <FloatingCartButton />
-            <Footer />
+            <StorefrontLayout>{children}</StorefrontLayout>
           </div>
         </CartProvider>
       </body>
