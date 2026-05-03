@@ -14,9 +14,18 @@ export default async function Home() {
   // Dynamically group products by name — any new product name added via admin will appear automatically
   const productNames = [...new Set(allProducts.map(p => p.name))];
 
+  const getImageForProduct = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('ghee')) return '/products/ghee.png';
+    if (n.includes('butter')) return '/products/butter.png';
+    if (n.includes('gulkand')) return '/products/gulkand.png';
+    return null;
+  };
+
   const productGroups = productNames.map(name => ({
     name,
     description: allProducts.find(p => p.name === name)?.description || "",
+    imageUrl: getImageForProduct(name),
     variants: allProducts.filter(p => p.name === name).map(p => ({
       id: p.id,
       unitSize: p.unitSize,

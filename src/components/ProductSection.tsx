@@ -13,6 +13,7 @@ type Variant = {
 type ProductGroup = {
   name: string;
   description: string;
+  imageUrl?: string | null;
   variants: Variant[];
 };
 
@@ -56,6 +57,16 @@ function ProductCard({ group }: { group: ProductGroup }) {
     }}>
       <h3 style={{ fontSize: "1.25rem", fontWeight: 600, marginBottom: "0.5rem", color: "#1a1a1a" }}>{group.name}</h3>
       <p style={{ color: "#666", fontSize: "0.95rem", marginBottom: "1rem", flexGrow: 1 }}>{group.description}</p>
+
+      {group.imageUrl && (
+        <div style={{ width: "100%", height: "200px", position: "relative", marginBottom: "1.5rem", borderRadius: "8px", overflow: "hidden" }}>
+          <img 
+            src={group.imageUrl} 
+            alt={group.name}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        </div>
+      )}
 
       <div style={{ width: "100%", marginBottom: "1rem" }}>
         <select
