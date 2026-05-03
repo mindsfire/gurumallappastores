@@ -12,7 +12,7 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
-  const [phoneFilter, setPhoneFilter] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Inventory management state
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
@@ -155,9 +155,13 @@ export default function AdminDashboardPage() {
   };
 
   // Get unique phone numbers for the filter
-  const uniquePhones = [...new Set(orders.map(o => o.customer?.phone).filter(Boolean))];
-  const filteredOrders = phoneFilter ? orders.filter(o => o.customer?.phone === phoneFilter) : orders;
-  const orderCountByPhone = (phone: string) => orders.filter(o => o.customer?.phone === phone).length;
+  const filteredOrders = searchQuery 
+    ? orders.filter(o => 
+        o.customer?.phone?.includes(searchQuery) || 
+        o.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        o.shortId?.toLowerCase().includes(searchQuery.toLowerCase())
+      ) 
+    : orders;
 
   const statusColors: Record<string, string> = {
     PENDING_VERIFICATION: "#fff3cd",
@@ -251,16 +255,20 @@ export default function AdminDashboardPage() {
       {/* ====== ORDERS TAB ====== */}
       {activeTab === "orders" && (
         <div>
-          <div style={{ marginBottom: "1.5rem", display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-            <span style={{ fontWeight: "bold", fontSize: "0.9rem", color: "#666" }}>Filter by Customer:</span>
-            <button onClick={() => setPhoneFilter("")} style={{ padding: "0.4rem 0.8rem", border: phoneFilter === "" ? "2px solid #4a2c00" : "1px solid #ccc", background: phoneFilter === "" ? "#f5f0e8" : "white", borderRadius: "20px", cursor: "pointer", fontSize: "0.85rem", fontWeight: phoneFilter === "" ? "bold" : "normal" }}>
-              All ({orders.length})
-            </button>
-            {uniquePhones.map(phone => (
-              <button key={phone} onClick={() => setPhoneFilter(phone)} style={{ padding: "0.4rem 0.8rem", border: phoneFilter === phone ? "2px solid #4a2c00" : "1px solid #ccc", background: phoneFilter === phone ? "#f5f0e8" : "white", borderRadius: "20px", cursor: "pointer", fontSize: "0.85rem", fontWeight: phoneFilter === phone ? "bold" : "normal" }}>
-                📱 {phone} ({orderCountByPhone(phone)})
-              </button>
-            ))}
+          <div style={{ marginBottom: "1.5rem", display: "flex", gap: "1rem", alignItems: "center", background: "#f9f9f9", padding: "1rem", borderRadius: "8px", border: "1px solid #eee" }}>
+            <span style={{ fontWeight: "bold", fontSize: "0.9rem", color: "#333", whiteSpace: "nowrap" }}>🔍 Search Orders:</span>
+            <input 
+              type="search" 
+              placeholder="Search by customer name, phone number, or Order ID..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{ ...inputStyle, maxWidth: "400px" }}
+            />
+            {searchQuery && (
+              <span style={{ fontSize: "0.85rem", color: "#666" }}>
+                Found {filteredOrders.length} matching {filteredOrders.length === 1 ? "order" : "orders"}
+              </span>
+            )}
           </div>
 
           {filteredOrders.length === 0 ? (
