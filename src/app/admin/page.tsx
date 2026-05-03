@@ -277,17 +277,22 @@ export default function AdminDashboardPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
               {filteredOrders.map(order => (
                 <div key={order.id} style={{ background: "white", borderRadius: "8px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)", overflow: "hidden" }}>
-                  <div onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)} style={{ padding: "1rem", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-                      <span style={{ fontWeight: "bold", fontSize: "1.1rem", color: "#4a2c00" }}>{order.shortId}</span>
-                      <span style={{ fontSize: "0.85rem", color: "#666" }}>{new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
-                      <span style={{ fontWeight: "bold" }}>₹{order.totalAmount}</span>
+                  <div onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)} style={{ padding: "1rem", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", flex: 1 }}>
+                      <span style={{ fontWeight: "bold", fontSize: "1rem", color: "#4a2c00", minWidth: "85px" }}>{order.shortId}</span>
+                      <span style={{ fontSize: "0.85rem", color: "#666", whiteSpace: "nowrap" }}>
+                        {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </span>
+                      <span style={{ fontSize: "0.85rem", color: "#444", fontWeight: "600", whiteSpace: "nowrap", background: "#f5f5f5", padding: "0.15rem 0.4rem", borderRadius: "4px", border: "1px solid #eaeaea" }}>
+                        📱 {order.customer?.phone}
+                      </span>
+                      <span style={{ fontWeight: "bold", fontSize: "0.95rem" }}>₹{order.totalAmount}</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                      <span style={{ padding: "0.3rem 0.7rem", borderRadius: "12px", fontSize: "0.8rem", fontWeight: "bold", background: statusColors[order.status] || "#eee" }}>
+                      <span style={{ padding: "0.25rem 0.6rem", borderRadius: "12px", fontSize: "0.75rem", fontWeight: "bold", background: statusColors[order.status] || "#eee", whiteSpace: "nowrap" }}>
                         {order.status.replace(/_/g, " ")}
                       </span>
-                      <span style={{ fontSize: "1.2rem" }}>{expandedOrder === order.id ? "▲" : "▼"}</span>
+                      <span style={{ fontSize: "1rem", color: "#999", marginLeft: "0.25rem" }}>{expandedOrder === order.id ? "▲" : "▼"}</span>
                     </div>
                   </div>
 
