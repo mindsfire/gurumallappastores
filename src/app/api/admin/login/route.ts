@@ -7,7 +7,12 @@ export async function POST(request: Request) {
 
     // In a real production app, passwords should be hashed in a DB.
     // Since this is a simple 2-user setup, we use an env var in the format: "user1:pass1,user2:pass2"
-    const adminUsersString = process.env.ADMIN_CREDENTIALS || "admin1:admin123,admin2:admin456";
+    const adminUsersString = process.env.ADMIN_CREDENTIALS;
+    
+    if (!adminUsersString) {
+      console.error('ADMIN_CREDENTIALS environment variable is not set');
+      return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    }
     
     // Parse the credentials
     const validUsers = adminUsersString.split(',').map(pair => {
