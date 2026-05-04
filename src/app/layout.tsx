@@ -4,6 +4,7 @@ import StorefrontLayout from '@/components/StorefrontLayout';
 import { CartProvider } from '@/context/CartContext';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.gurumallappastores.com'),
   title: 'Gurumallappa Stores | Authentic Pure Cow Ghee & Butter',
   description: 'A legacy of purity since 1880. Buy authentic pure cow ghee, butter, and gulkand from Mysore.',
   openGraph: {
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
     description: 'A legacy of purity since 1880. Buy authentic pure cow ghee, butter, and gulkand from Mysore.',
     images: [
       {
-        url: '/hero_ghee.png',
+        url: '/og-image.jpg',
         width: 800,
         height: 1000,
         alt: 'Gurumallappa Stores Storefront',
