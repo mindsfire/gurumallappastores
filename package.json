@@ -4,11 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "jose": "^6.2.3",
     "next": "16.2.4",
     "react": "19.2.4",
@@ -16,7 +17,6 @@
     "react-qr-code": "^2.0.21"
   },
   "devDependencies": {
-    "@prisma/client": "^5.22.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
