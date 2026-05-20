@@ -37,42 +37,54 @@ export async function POST(request: Request) {
       );
     }
 
-    // Attempt to create the order
-    // Since shortId needs to be unique, we might retry in a real robust system if collision happens,
-    // but a 4-digit number is fine for a small store starting out. We can expand to 5 or 6 later.
-    let shortId = generateShortId();
-    
-    // Create customer (or we could try to find existing by phone, but simpler to just create new record for now)
-    const newCustomer = await prisma.customer.create({
-      data: {
-        name: customer.name,
-        phone: customer.phone,
-        email: customer.email || null,
-        address: customer.address,
-        city: customer.city,
-        pincode: customer.pincode,
-      }
+    // Upsert customer by phone — keeps one record per customer so tracking always uses current pincode
+    const customerData = {
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email || null,
+      address: customer.address,
+      city: customer.city,
+      pincode: customer.pincode,
+    };
+    const existingCustomer = await prisma.customer.findFirst({
+      where: { phone: customer.phone },
+      orderBy: { createdAt: 'desc' },
     });
+    const savedCustomer = existingCustomer
+      ? await prisma.customer.update({ where: { id: existingCustomer.id }, data: customerData })
+      : await prisma.customer.create({ data: customerData });
 
-    // Create Order and OrderItems
-    const newOrder = await prisma.order.create({
-      data: {
-        shortId,
-        customerId: newCustomer.id,
-        totalAmount,
-        utrNumber,
-        status: 'PENDING_VERIFICATION',
-        items: {
-          create: items.map((item: any) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.price
-          }))
+    // Retry up to 5 times on shortId collision (P2002 unique constraint)
+    let newOrder;
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      const shortId = generateShortId();
+      try {
+        newOrder = await prisma.order.create({
+          data: {
+            shortId,
+            customerId: savedCustomer.id,
+            totalAmount,
+            utrNumber,
+            status: 'PENDING_VERIFICATION',
+            items: {
+              create: items.map((item: any) => ({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: item.price
+              }))
+            }
+          }
+        });
+        break; // success — exit retry loop
+      } catch (err: any) {
+        if (err.code === 'P2002' && err.meta?.target?.includes('shortId') && attempt < 5) {
+          continue; // shortId collision — retry with a new ID
         }
+        throw err; // any other error, or exhausted retries
       }
-    });
+    }
 
-    return NextResponse.json({ success: true, orderId: newOrder.shortId });
+    return NextResponse.json({ success: true, orderId: newOrder!.shortId });
   } catch (error) {
     console.error('Checkout error:', error);
     return NextResponse.json({ error: 'Failed to process checkout' }, { status: 500 });
