@@ -27,6 +27,7 @@ export default function CheckoutPage() {
   const [utrNumber, setUtrNumber] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [utrError, setUtrError] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -58,6 +59,7 @@ export default function CheckoutPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setUtrError("");
 
     if (utrNumber.length < 12) {
       setError("Please enter a valid 12-digit UTR/Reference number from your payment app.");
@@ -66,8 +68,9 @@ export default function CheckoutPage() {
 
     setIsSubmitting(true);
 
+    let response: Response | undefined;
     try {
-      const response = await fetch("/api/checkout", {
+      response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -90,7 +93,11 @@ export default function CheckoutPage() {
       localStorage.setItem("gms_last_order", data.orderId);
       router.push(`/order-confirmation/${data.orderId}`);
     } catch (err: any) {
-      setError(err.message);
+      if (response?.status === 409) {
+        setUtrError(err.message);
+      } else {
+        setError(err.message);
+      }
       setIsSubmitting(false);
     }
   };
@@ -221,6 +228,11 @@ export default function CheckoutPage() {
               <small style={{ color: "#666", display: "block", marginTop: "0.5rem" }}>
                 You can find this in your payment app (GPay/PhonePe) after a successful transaction.
               </small>
+              {utrError && (
+                <small style={{ color: "#c0392b", display: "block", marginTop: "0.5rem", fontWeight: 500 }}>
+                  {utrError}
+                </small>
+              )}
             </div>
 
             <button type="submit" disabled={isSubmitting} className={styles.submitBtn}>
