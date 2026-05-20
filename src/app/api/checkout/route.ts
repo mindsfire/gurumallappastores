@@ -28,6 +28,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Valid 12-digit UTR is required' }, { status: 400 });
     }
 
+    // Reject if this UTR was already used for another order
+    const existingOrder = await prisma.order.findUnique({ where: { utrNumber } });
+    if (existingOrder) {
+      return NextResponse.json(
+        { error: `This UTR number is already linked to order ${existingOrder.shortId}. If you believe this is an error, please contact us.` },
+        { status: 409 }
+      );
+    }
+
     // Attempt to create the order
     // Since shortId needs to be unique, we might retry in a real robust system if collision happens,
     // but a 4-digit number is fine for a small store starting out. We can expand to 5 or 6 later.

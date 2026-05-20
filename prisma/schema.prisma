@@ -40,7 +40,7 @@ model Order {
   customer    Customer    @relation(fields: [customerId], references: [id])
   status      String      @default("PENDING_VERIFICATION") // PENDING_VERIFICATION, PROCESSING, SHIPPED, COMPLETED, CANCELLED
   totalAmount Float
-  utrNumber   String?     // Manual UPI Tracking
+  utrNumber   String?     @unique // Manual UPI Tracking — one UTR per order
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   items       OrderItem[]
