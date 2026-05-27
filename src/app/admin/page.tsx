@@ -183,6 +183,7 @@ export default function AdminDashboardPage() {
   const paginatedOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const statusColors: Record<string, string> = {
+    PENDING_UTR: "#fde8d8",
     PENDING_VERIFICATION: "#fff3cd",
     PROCESSING: "#cce5ff",
     SHIPPED: "#d4edda",
@@ -294,6 +295,7 @@ export default function AdminDashboardPage() {
                 style={{ ...inputStyle, width: "auto", cursor: "pointer", background: "white" }}
               >
                 <option value="ALL">All Orders</option>
+                <option value="PENDING_UTR">Awaiting Payment</option>
                 <option value="PENDING_VERIFICATION">Pending Verification</option>
                 <option value="PROCESSING">Processing</option>
                 <option value="SHIPPED">Shipped</option>
@@ -376,7 +378,8 @@ export default function AdminDashboardPage() {
                       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
                         <span style={{ fontWeight: "bold", fontSize: "0.9rem" }}>Update Status:</span>
                         <select value={order.status} onChange={(e) => updateOrderStatus(order.id, e.target.value)} style={{ padding: "0.5rem", borderRadius: "4px", border: "1px solid #ccc", backgroundColor: statusColors[order.status] || "white", fontWeight: "bold" }}>
-                          <option value="PENDING_VERIFICATION">Pending UTR</option>
+                          <option value="PENDING_UTR">Awaiting Payment</option>
+                          <option value="PENDING_VERIFICATION">Pending Verification</option>
                           <option value="PROCESSING">Processing</option>
                           <option value="SHIPPED">Shipped</option>
                           <option value="COMPLETED">Delivered</option>
