@@ -12,6 +12,11 @@ const STORE_NAME = "Gurumallappa Stores";
 
 type Step = "details" | "payment";
 
+type CartLine = { productId: string; name: string; price: number; quantity: number };
+type PendingCheckout = { orderId: string; items: CartLine[]; finalTotal: number };
+
+const PENDING_KEY = "gms_pending_checkout";
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, totalPrice, clearCart, updateQuantity } = useCart() as any;
@@ -28,14 +33,35 @@ export default function CheckoutPage() {
   });
 
   const [orderId, setOrderId] = useState("");
+  const [snapshot, setSnapshot] = useState<PendingCheckout | null>(null);
   const [utrNumber, setUtrNumber] = useState("");
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [isSubmittingUtr, setIsSubmittingUtr] = useState(false);
   const [orderError, setOrderError] = useState("");
   const [utrError, setUtrError] = useState("");
 
+  // Recover an in-progress PENDING_UTR order on mount (handles page refresh on step 2)
   useEffect(() => {
     setMounted(true);
+    const raw = localStorage.getItem(PENDING_KEY);
+    if (!raw) return;
+    try {
+      const pending: PendingCheckout = JSON.parse(raw);
+      fetch(`/api/orders/${pending.orderId}/status`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.status === "PENDING_UTR") {
+            setOrderId(pending.orderId);
+            setSnapshot(pending);
+            setStep("payment");
+          } else {
+            localStorage.removeItem(PENDING_KEY);
+          }
+        })
+        .catch(() => localStorage.removeItem(PENDING_KEY));
+    } catch {
+      localStorage.removeItem(PENDING_KEY);
+    }
   }, []);
 
   if (!mounted) return null;
@@ -81,8 +107,12 @@ export default function CheckoutPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to place order");
 
+      const finalTotal = totalPrice + 30;
+      const snap: PendingCheckout = { orderId: data.orderId, items, finalTotal };
       localStorage.setItem("gms_last_order", data.orderId);
+      localStorage.setItem(PENDING_KEY, JSON.stringify(snap));
       setOrderId(data.orderId);
+      setSnapshot(snap);
       setStep("payment");
     } catch (err: any) {
       setOrderError(err.message);
@@ -114,6 +144,7 @@ export default function CheckoutPage() {
       if (!response.ok) throw new Error(data.error || "Failed to submit UTR");
 
       clearCart();
+      localStorage.removeItem(PENDING_KEY);
       router.push(`/order-confirmation/${orderId}`);
     } catch (err: any) {
       setUtrError(err.message);
@@ -121,7 +152,8 @@ export default function CheckoutPage() {
     }
   };
 
-  const finalTotal = totalPrice + 30;
+  const finalTotal = step === "payment" && snapshot ? snapshot.finalTotal : totalPrice + 30;
+  const summaryItems: CartLine[] = step === "payment" && snapshot ? snapshot.items : items;
   const upiUrl = `upi://pay?pa=${STORE_UPI_ID}&pn=${encodeURIComponent(STORE_NAME)}&am=${finalTotal}&cu=INR`;
 
   // ── Step indicator ──────────────────────────────────────────────────────────
@@ -298,6 +330,24 @@ export default function CheckoutPage() {
             </Link>{" "}
             and submit your UTR there.
           </p>
+        </div>
+
+        <div className={styles.section} style={{ marginTop: "1.5rem" }}>
+          <h2 className={styles.sectionTitle}>Order Summary</h2>
+          {summaryItems.map((item) => (
+            <div key={item.productId} className={styles.cartItem}>
+              <span>{item.name} <span style={{ color: "#666", fontSize: "0.85rem" }}>× {item.quantity}</span></span>
+              <span style={{ fontWeight: "bold" }}>₹{item.price * item.quantity}</span>
+            </div>
+          ))}
+          <div className={styles.cartItem} style={{ color: "#666", marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #ccc" }}>
+            <span>Delivery Fee (Mysuru)</span>
+            <span>₹30</span>
+          </div>
+          <div className={styles.cartTotal}>
+            <span>Total to Pay</span>
+            <span>₹{finalTotal}</span>
+          </div>
         </div>
       </div>
     </div>
