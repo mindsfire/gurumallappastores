@@ -9,7 +9,7 @@ export async function middleware(request: NextRequest) {
   const isAdminPage = path.startsWith('/admin') && !isApiRoute;
 
   if (isApiRoute || isAdminPage) {
-    if (path === '/admin/login') {
+    if (path === '/admin/login' || path === '/api/admin/login') {
       return NextResponse.next();
     }
 
