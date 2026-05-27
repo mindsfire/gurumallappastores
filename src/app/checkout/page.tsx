@@ -40,7 +40,7 @@ export default function CheckoutPage() {
 
   if (!mounted) return null;
 
-  if (items.length === 0) {
+  if (items.length === 0 && step === "details") {
     return (
       <div className="container" style={{ textAlign: "center", padding: "4rem 1rem" }}>
         <h2>Your cart is empty</h2>
@@ -81,7 +81,6 @@ export default function CheckoutPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to place order");
 
-      clearCart();
       localStorage.setItem("gms_last_order", data.orderId);
       setOrderId(data.orderId);
       setStep("payment");
@@ -114,6 +113,7 @@ export default function CheckoutPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Failed to submit UTR");
 
+      clearCart();
       router.push(`/order-confirmation/${orderId}`);
     } catch (err: any) {
       setUtrError(err.message);

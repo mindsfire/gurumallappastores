@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import styles from "./page.module.css";
 
-export default function OrderConfirmationPage({ params }: { params: { id: string } }) {
-  const orderId = params.id;
+export default function OrderConfirmationPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: orderId } = use(params);
 
   const [status, setStatus] = useState<string | null>(null);
   const [utrNumber, setUtrNumber] = useState("");

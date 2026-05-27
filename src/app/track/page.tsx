@@ -39,6 +39,7 @@ export default function TrackOrderPage() {
 
   const getStatusText = (status: string) => {
     switch (status) {
+      case "PENDING_UTR": return "Awaiting Payment";
       case "PENDING_VERIFICATION": return "Pending Verification";
       case "PROCESSING": return "Processing";
       case "SHIPPED": return "Shipped";
