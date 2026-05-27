@@ -12,6 +12,8 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [editingUtr, setEditingUtr] = useState<string | null>(null);
+  const [utrDraft, setUtrDraft] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   
@@ -60,6 +62,39 @@ export default function AdminDashboardPage() {
         body: JSON.stringify({ status: newStatus })
       });
       if (!res.ok) throw new Error("Failed to update status");
+      fetchData();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const saveOrderUtr = async (orderId: string, utrNumber: string) => {
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ utrNumber })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save UTR");
+      setEditingUtr(null);
+      setUtrDraft("");
+      fetchData();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const resetOrderUtr = async (orderId: string) => {
+    if (!confirm("Clear this UTR and let the customer resubmit? Order status will go back to Awaiting Payment.")) return;
+    try {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resetUtr: true })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to reset UTR");
       fetchData();
     } catch (err: any) {
       alert(err.message);
@@ -368,11 +403,53 @@ export default function AdminDashboardPage() {
                         </div>
                       </div>
 
-                      <div style={{ marginBottom: "1rem", fontSize: "0.9rem" }}>
-                        <span style={{ fontWeight: "bold", color: "#333" }}>💳 UTR: </span>
-                        <span style={{ fontFamily: "monospace", letterSpacing: "1px", background: "#f5f5f5", padding: "0.2rem 0.5rem", borderRadius: "4px" }}>
-                          {order.utrNumber || "Not provided"}
-                        </span>
+                      <div style={{ marginBottom: "1rem", fontSize: "0.9rem", display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: "bold", color: "#333" }}>💳 UTR:</span>
+                        {editingUtr === order.id ? (
+                          <>
+                            <input
+                              type="text"
+                              value={utrDraft}
+                              onChange={(e) => setUtrDraft(e.target.value)}
+                              placeholder="12-digit UTR"
+                              maxLength={12}
+                              style={{ padding: "0.3rem 0.5rem", border: "1px solid #ccc", borderRadius: "4px", fontFamily: "monospace", letterSpacing: "1px", width: "180px" }}
+                            />
+                            <button
+                              onClick={() => saveOrderUtr(order.id, utrDraft)}
+                              style={{ padding: "0.3rem 0.7rem", background: "#28a745", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "0.8rem", fontWeight: "bold" }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => { setEditingUtr(null); setUtrDraft(""); }}
+                              style={{ padding: "0.3rem 0.7rem", background: "transparent", color: "#666", border: "1px solid #ccc", borderRadius: "4px", cursor: "pointer", fontSize: "0.8rem" }}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ fontFamily: "monospace", letterSpacing: "1px", background: "#f5f5f5", padding: "0.2rem 0.5rem", borderRadius: "4px" }}>
+                              {order.utrNumber || "Not provided"}
+                            </span>
+                            <button
+                              onClick={() => { setEditingUtr(order.id); setUtrDraft(order.utrNumber || ""); }}
+                              style={{ padding: "0.2rem 0.6rem", background: "transparent", color: "#4a2c00", border: "1px solid #4a2c00", borderRadius: "4px", cursor: "pointer", fontSize: "0.8rem" }}
+                            >
+                              {order.utrNumber ? "Edit" : "Add UTR"}
+                            </button>
+                            {order.utrNumber && (
+                              <button
+                                onClick={() => resetOrderUtr(order.id)}
+                                style={{ padding: "0.2rem 0.6rem", background: "transparent", color: "#dc3545", border: "1px solid #dc3545", borderRadius: "4px", cursor: "pointer", fontSize: "0.8rem" }}
+                                title="Clear UTR so customer can resubmit"
+                              >
+                                Reset
+                              </button>
+                            )}
+                          </>
+                        )}
                       </div>
 
                       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>

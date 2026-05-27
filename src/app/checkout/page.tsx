@@ -13,7 +13,7 @@ const STORE_NAME = "Gurumallappa Stores";
 type Step = "details" | "payment";
 
 type CartLine = { productId: string; name: string; price: number; quantity: number };
-type PendingCheckout = { orderId: string; items: CartLine[]; finalTotal: number };
+type PendingCheckout = { orderId: string; items: CartLine[]; finalTotal: number; phone: string };
 
 const PENDING_KEY = "gms_pending_checkout";
 
@@ -47,7 +47,11 @@ export default function CheckoutPage() {
     if (!raw) return;
     try {
       const pending: PendingCheckout = JSON.parse(raw);
-      fetch(`/api/orders/${pending.orderId}/status`)
+      if (!pending.phone) {
+        localStorage.removeItem(PENDING_KEY);
+        return;
+      }
+      fetch(`/api/orders/${pending.orderId}/status?phone=${encodeURIComponent(pending.phone)}`)
         .then((r) => r.json())
         .then((d) => {
           if (d.status === "PENDING_UTR") {
@@ -94,6 +98,30 @@ export default function CheckoutPage() {
     setIsSubmittingOrder(true);
 
     try {
+      // If a PENDING_UTR order already exists for this customer (e.g. back-nav after step 2),
+      // resume it instead of creating a duplicate.
+      const existing = localStorage.getItem(PENDING_KEY);
+      if (existing) {
+        try {
+          const pending: PendingCheckout = JSON.parse(existing);
+          if (pending.orderId && pending.phone === formData.phone) {
+            const r = await fetch(`/api/orders/${pending.orderId}/status?phone=${encodeURIComponent(pending.phone)}`);
+            const d = await r.json();
+            if (r.ok && d.status === "PENDING_UTR") {
+              setOrderId(pending.orderId);
+              setSnapshot(pending);
+              setStep("payment");
+              setIsSubmittingOrder(false);
+              return;
+            }
+            // Stale snapshot — clear and fall through to create a new order
+            localStorage.removeItem(PENDING_KEY);
+          }
+        } catch {
+          localStorage.removeItem(PENDING_KEY);
+        }
+      }
+
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -108,7 +136,7 @@ export default function CheckoutPage() {
       if (!response.ok) throw new Error(data.error || "Failed to place order");
 
       const finalTotal = totalPrice + 30;
-      const snap: PendingCheckout = { orderId: data.orderId, items, finalTotal };
+      const snap: PendingCheckout = { orderId: data.orderId, items, finalTotal, phone: formData.phone };
       localStorage.setItem("gms_last_order", data.orderId);
       localStorage.setItem(PENDING_KEY, JSON.stringify(snap));
       setOrderId(data.orderId);
@@ -137,7 +165,7 @@ export default function CheckoutPage() {
       const response = await fetch(`/api/orders/${orderId}/utr`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ utrNumber }),
+        body: JSON.stringify({ utrNumber, phone: snapshot?.phone || formData.phone }),
       });
 
       const data = await response.json();
