@@ -10,7 +10,7 @@ function generateShortId() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { customer, items, totalAmount, utrNumber } = body;
+    const { customer, items, totalAmount } = body;
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
@@ -22,19 +22,6 @@ export async function POST(request: Request) {
 
     if (!customer.pincode.match(/^57[01][0-9]{3}$/)) {
       return NextResponse.json({ error: 'Delivery is strictly restricted to Mysuru district pincodes (570xxx or 571xxx)' }, { status: 400 });
-    }
-
-    if (!utrNumber || utrNumber.length < 12) {
-      return NextResponse.json({ error: 'Valid 12-digit UTR is required' }, { status: 400 });
-    }
-
-    // Reject if this UTR was already used for another order
-    const existingOrder = await prisma.order.findUnique({ where: { utrNumber } });
-    if (existingOrder) {
-      return NextResponse.json(
-        { error: `This UTR number is already linked to order ${existingOrder.shortId}. If you believe this is an error, please contact us.` },
-        { status: 409 }
-      );
     }
 
     // Upsert customer by phone — keeps one record per customer so tracking always uses current pincode
@@ -64,8 +51,7 @@ export async function POST(request: Request) {
             shortId,
             customerId: savedCustomer.id,
             totalAmount,
-            utrNumber,
-            status: 'PENDING_VERIFICATION',
+            status: 'PENDING_UTR',
             items: {
               create: items.map((item: any) => ({
                 productId: item.productId,
