@@ -7,6 +7,11 @@ function generateShortId() {
   return `GMS-${randomNum}`;
 }
 
+// Strip non-digits and keep last 10 — handles "+91 98765 43210", "098765-43210", etc.
+function normalizePhone(p: string) {
+  return p.replace(/\D/g, '').slice(-10);
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -24,17 +29,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Delivery is strictly restricted to Mysuru district pincodes (570xxx or 571xxx)' }, { status: 400 });
     }
 
+    const normalizedPhone = normalizePhone(customer.phone);
+    if (normalizedPhone.length !== 10) {
+      return NextResponse.json({ error: 'Please enter a valid 10-digit mobile number' }, { status: 400 });
+    }
+
     // Upsert customer by phone — keeps one record per customer so tracking always uses current pincode
     const customerData = {
       name: customer.name,
-      phone: customer.phone,
+      phone: normalizedPhone,
       email: customer.email || null,
       address: customer.address,
       city: customer.city,
       pincode: customer.pincode,
     };
     const existingCustomer = await prisma.customer.findFirst({
-      where: { phone: customer.phone },
+      where: { phone: normalizedPhone },
       orderBy: { createdAt: 'desc' },
     });
     const savedCustomer = existingCustomer

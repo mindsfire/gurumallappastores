@@ -98,6 +98,30 @@ export default function CheckoutPage() {
     setIsSubmittingOrder(true);
 
     try {
+      // If a PENDING_UTR order already exists for this customer (e.g. back-nav after step 2),
+      // resume it instead of creating a duplicate.
+      const existing = localStorage.getItem(PENDING_KEY);
+      if (existing) {
+        try {
+          const pending: PendingCheckout = JSON.parse(existing);
+          if (pending.orderId && pending.phone === formData.phone) {
+            const r = await fetch(`/api/orders/${pending.orderId}/status?phone=${encodeURIComponent(pending.phone)}`);
+            const d = await r.json();
+            if (r.ok && d.status === "PENDING_UTR") {
+              setOrderId(pending.orderId);
+              setSnapshot(pending);
+              setStep("payment");
+              setIsSubmittingOrder(false);
+              return;
+            }
+            // Stale snapshot — clear and fall through to create a new order
+            localStorage.removeItem(PENDING_KEY);
+          }
+        } catch {
+          localStorage.removeItem(PENDING_KEY);
+        }
+      }
+
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
