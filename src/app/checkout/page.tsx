@@ -16,6 +16,8 @@ type CartLine = { productId: string; name: string; price: number; quantity: numb
 type PendingCheckout = { orderId: string; items: CartLine[]; finalTotal: number; phone: string };
 
 const PENDING_KEY = "gms_pending_checkout";
+const ORDERING_ENABLED = process.env.NEXT_PUBLIC_ORDERING_ENABLED !== "false";
+const STORE_PHONE = "9742942911";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -69,6 +71,24 @@ export default function CheckoutPage() {
   }, []);
 
   if (!mounted) return null;
+
+  if (!ORDERING_ENABLED) {
+    return (
+      <div className="container" style={{ textAlign: "center", padding: "4rem 1rem" }}>
+        <h2>Online orders are blocked</h2>
+        <p>
+          Please call the store at{" "}
+          <a href={`tel:${STORE_PHONE}`} style={{ color: "#4a2c00", fontWeight: "bold" }}>
+            {STORE_PHONE}
+          </a>{" "}
+          to place your order.
+        </p>
+        <button onClick={() => router.push("/")} className="btn-primary" style={{ marginTop: "1rem" }}>
+          Return to Shop
+        </button>
+      </div>
+    );
+  }
 
   if (items.length === 0 && step === "details") {
     return (

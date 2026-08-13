@@ -14,6 +14,13 @@ function normalizePhone(p: string) {
 
 export async function POST(request: Request) {
   try {
+    if (process.env.ORDERING_ENABLED === 'false') {
+      return NextResponse.json(
+        { error: 'Online orders are blocked. Please call the store at 9742942911 to place your order.' },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { customer, items, totalAmount } = body;
 
